@@ -1,0 +1,64 @@
+-- Dinsaurus Hub - Advanced Anti Banned Script
+-- Bật chống banned và hiển thị thông báo dạng thành tích
+
+-- Gửi thông báo giống "achievement" Roblox
+pcall(function()
+    game.StarterGui:SetCore("SendNotification", {
+        Title = "[Dinsaurus Hub]",
+        Text = "Anti-Banned Activated Successfully!",
+        Duration = 5
+    })
+end)
+
+-- Chống AFK
+for _, v in pairs(getconnections(game:GetService("Players").LocalPlayer.Idled)) do
+    v:Disable()
+end
+
+-- Chặn Kick/Ban & Remote nguy hiểm
+local mt = getrawmetatable(game)
+setreadonly(mt, false)
+local old = mt.__namecall
+
+mt.__namecall = newcclosure(function(self, ...)
+    local args = {...}
+    local method = getnamecallmethod():lower()
+    local path = tostring(self):lower()
+
+    if method == "kick" or path:find("ban") or path:find("log") or path:find("report") then
+        warn("[AntiBan] Blocked: " .. path)
+        return nil
+    end
+
+    return old(self, unpack(args))
+end)
+
+-- Giả executor
+getgenv().identifyexecutor = function()
+    return "RobloxPlayerBeta"
+end
+
+-- Phát hiện bị kiểm tra & tự kick
+local lp = game:GetService("Players").LocalPlayer
+
+lp:GetPropertyChangedSignal("Parent"):Connect(function()
+    if not lp:IsDescendantOf(game) then
+        return -- đã bị kick
+    end
+end)
+
+spawn(function()
+    while wait(1) do
+        if not lp:IsDescendantOf(game:GetService("Workspace")) then
+            pcall(function()
+                game.StarterGui:SetCore("SendNotification", {
+                    Title = "[Dinsaurus Hub]",
+                    Text = "Bạn đã bị quét! Đang tự thoát để tránh ban...",
+                    Duration = 5
+                })
+            end)
+            wait(1)
+            lp:Kick("Bạn đã bị quét bởi hệ thống giám sát. Dinsaurus Hub đã tự thoát.")
+        end
+    end
+end)
