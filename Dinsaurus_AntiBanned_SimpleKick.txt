@@ -1,0 +1,53 @@
+-- Dinsaurus Hub - Simple Anti Banned System
+
+-- Hiện thông báo khi bật
+pcall(function()
+    game.StarterGui:SetCore("SendNotification", {
+        Title = "[Dinsaurus Hub]",
+        Text = "Anti-Banned Activated Successfully!",
+        Duration = 5
+    })
+end)
+
+-- Chống AFK
+for _, v in pairs(getconnections(game:GetService("Players").LocalPlayer.Idled)) do
+    v:Disable()
+end
+
+-- Bảo vệ kick/ban
+local mt = getrawmetatable(game)
+setreadonly(mt, false)
+local old = mt.__namecall
+
+mt.__namecall = newcclosure(function(self, ...)
+    local args = {...}
+    local method = getnamecallmethod():lower()
+    if method == "kick" then
+        warn("[AntiBan] Blocked a kick attempt.")
+        return
+    end
+    return old(self, unpack(args))
+end)
+
+-- Phát hiện bị remove khỏi Players, sẽ cảnh báo và kick
+local Players = game:GetService("Players")
+local lp = Players.LocalPlayer
+
+lp:GetPropertyChangedSignal("Parent"):Connect(function()
+    if not lp:IsDescendantOf(Players) then
+        -- Gửi thông báo cảnh báo
+        pcall(function()
+            game.StarterGui:SetCore("SendNotification", {
+                Title = "[Dinsaurus Hub]",
+                Text = "Bạn đã bị quét! Tự thoát để tránh bị ban...",
+                Duration = 4
+            })
+        end)
+        -- Thoát game chắc chắn sau thông báo
+        task.delay(4.5, function()
+            pcall(function()
+                lp:Kick("Bạn đã bị quét! Dinsaurus Hub đã tự thoát để bảo vệ tài khoản.")
+            end)
+        end)
+    end
+end)
